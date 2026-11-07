@@ -8,6 +8,10 @@ Wallet*/
 wallet*/
 *.sso
 *.p12
+*.pem
+*.jks
+*.zip
+*.rar
 tnsnames.ora
 sqlnet.ora
 target/

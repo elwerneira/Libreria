@@ -2,6 +2,7 @@ package Gestionar.Libros.service;
 
 import Gestionar.Libros.model.Libro;
 import Gestionar.Libros.repository.LibroRepository;
+import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,11 @@ public class LibroService {
 
     public LibroService(LibroRepository repository) {
         this.repository = repository;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Libro> listar() {
+        return repository.findAll();
     }
 
     @Transactional(readOnly = true)

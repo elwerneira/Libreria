@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
+import java.util.List;
 
 @RestController
 @RequestMapping("/libros")
@@ -25,6 +26,11 @@ public class LibroController {
 
     public LibroController(LibroService service) {
         this.service = service;
+    }
+
+    @GetMapping
+    public List<Libro> listar() {
+        return service.listar();
     }
 
     @GetMapping("/{id}")

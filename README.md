@@ -2,7 +2,7 @@
 
 En este proyecto desarrollé un microservicio para gestionar libros de una biblioteca, como parte de la actividad de la Semana 1 de Desarrollo Full Stack III. Utilicé Java con Spring Boot, JPA para guardar y consultar los datos, y una base de datos Oracle en la nube.
 
-Cada libro tiene un ID, título, autor, año de publicación y género. Mediante la API puedo crear un libro, buscarlo por su ID, actualizar sus datos y eliminarlo.
+Cada libro tiene un ID, título, autor, año de publicación y género. Mediante la API puedo listar los libros, crear un libro, buscarlo por su ID, actualizar sus datos y eliminarlo. En Semana 3 se agregó GET /libros para conectar el listado del frontend Angular ubicado en ../biblioteca-web.
 
 ## Para ejecutar el proyecto
 
@@ -19,21 +19,19 @@ Dentro de la carpeta del proyecto debo tener el archivo `config/application-loca
 ```properties
 spring.datasource.username=USUARIO
 spring.datasource.password=CLAVE
-spring.datasource.url=jdbc:oracle:thin:@biblioteca_low?TNS_ADMIN="C:/ruta/Wallet_Biblioteca"
+spring.datasource.url=jdbc:oracle:thin:@biblioteca_low?TNS_ADMIN=./Wallet_Biblioteca
 ```
-
-Debo reemplazar USUARIO y CLAVE por los accesos reales de Oracle, y ajustar TNS_ADMIN a la carpeta donde descomprimí la wallet. Las comillas permiten usar una ruta que contenga espacios.
 
 El archivo principal `src/main/resources/application.properties` carga esta configuración local. Al clonar el repositorio debo crear el archivo local, porque no se descarga desde GitHub.
 
 Al usar otro equipo, debo ajustar la ruta de la wallet y JAVA_HOME al JDK instalado. También debe tener acceso de red a Oracle Cloud por el puerto 1522; si la base tiene restricciones por IP, debo autorizar la IP pública de esa conexión.
 
-Al conectarme a la misma base de datos tendré los mismos libros. La tabla LIBROS ya está creada y no necesito volver a ejecutar el script SQL. La opción `spring.jpa.hibernate.ddl-auto=update` permite que JPA cree o actualice la estructura de la tabla al iniciar.
+Al conectarme a la misma base de datos tendré los mismos libros. La tabla LIBROS ya está creada y no necesito volver a ejecutar el script SQL. En Semana 3 se usa `spring.jpa.hibernate.ddl-auto=validate`: comprueba la estructura existente sin recrearla.
 
 ## Iniciar servidor
 
 ```powershell
-cd "C:\Users\Elwer\Documents\Duoc\FullStack lll\Libros"
+cd "C:\Users\Elwer\Documents\Duoc\FullStack lll\Semana 3\Libros"
 $env:JAVA_HOME = "C:\Program Files\Java\jdk-27.0.1.0.3"
 .\mvnw.cmd spring-boot:run
 ```
@@ -50,6 +48,7 @@ Uso `http://localhost:8080` como dirección base.
 
 | Método | Ruta | Resultado esperado |
 | --- | --- | --- |
+| GET | `/libros` | 200 OK y la lista completa |
 | POST | `/libros` | 201 Created y el libro con su ID generado |
 | GET | `/libros/{id}` | 200 OK y los datos del libro |
 | PUT | `/libros/{id}` | 200 OK y los datos actualizados |
