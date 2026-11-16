@@ -33,3 +33,11 @@ El workflow verifica el proyecto base, instala el arquetipo, genera otro proyect
 La infraestructura utiliza EC2 t3.micro, un bucket privado cifrado y el perfil existente LabInstanceProfile. El puerto 8080 se restringe a la IP de demostracion. El despliegue es de laboratorio y consume creditos mientras los recursos esten activos.
 
 Consultar los resultados reales en la pestana Actions. La [guia detallada](README_SEMANA4.md) explica configuracion, Postman, credenciales temporales y correspondencia con la pauta.
+
+## Despliegue verificado
+
+- API: http://98.82.122.241:8080/libros
+- Pipeline: https://github.com/elwerneira/Libreria/actions/runs/43785632025
+- [Resultados de la verificacion](VERIFICACION_SEMANA4.md).
+
+La API esta restringida por IP. Biblioteca debe estar iniciada en Oracle y el laboratorio AWS Academy debe permanecer activo. La IP publica puede cambiar si se detiene y vuelve a iniciar la instancia.
