@@ -1,82 +1,35 @@
-# Libros
+# Libros Semana 4
 
-En este proyecto desarrollé un microservicio para gestionar libros de una biblioteca, como parte de la actividad de la Semana 1 de Desarrollo Full Stack III. Utilicé Java con Spring Boot, JPA para guardar y consultar los datos, y una base de datos Oracle en la nube.
+Proyecto de Desarrollo Full Stack III. Se crea un arquetipo Maven propio con el patron Builder, se genera un microservicio de Libros y se prepara su despliegue en AWS Academy mediante GitHub Actions. Se mantiene la misma base Oracle Biblioteca.
 
-Cada libro tiene un ID, título, autor, año de publicación y género. Mediante la API puedo listar los libros, crear un libro, buscarlo por su ID, actualizar sus datos y eliminarlo. En Semana 3 se agregó GET /libros para conectar el listado del frontend Angular ubicado en ../biblioteca-web.
+## Estructura
 
-## Para ejecutar el proyecto
+- `src`: microservicio base y pruebas.
+- `arquetipo-libros`: plantilla Maven reutilizable con Builder y CRUD.
+- `target/generado/libros-generado`: proyecto generado durante las pruebas y el pipeline; no se sube a Git.
+- `.github/workflows/semana4.yml`: pruebas, generacion y despliegue del JAR generado.
+- `infra/academy.json` y `deploy`: EC2, Systems Manager y actualizacion de versiones.
+- `postman`: coleccion de ocho solicitudes para comprobar el CRUD.
 
-Necesito un JDK compatible de versión 21 o superior, conexión a Internet y los accesos a la base de datos Oracle Cloud. El proyecto incluye Maven Wrapper, por lo que no es necesario instalar Maven por separado.
+## Empezar
 
-La conexión utiliza una wallet. La wallet y el archivo con las credenciales se entregan por separado y están fuera de Git.
-
-## Configurar la conexión a Oracle
-
-Primero debo descomprimir la wallet en una carpeta del equipo, conservando todos sus archivos.
-
-Dentro de la carpeta del proyecto debo tener el archivo `config/application-local.properties`, con esta estructura:
-
-```properties
-spring.datasource.username=USUARIO
-spring.datasource.password=CLAVE
-spring.datasource.url=jdbc:oracle:thin:@biblioteca_low?TNS_ADMIN=./Wallet_Biblioteca
-```
-
-El archivo principal `src/main/resources/application.properties` carga esta configuración local. Al clonar el repositorio debo crear el archivo local, porque no se descarga desde GitHub.
-
-Al usar otro equipo, debo ajustar la ruta de la wallet y JAVA_HOME al JDK instalado. También debe tener acceso de red a Oracle Cloud por el puerto 1522; si la base tiene restricciones por IP, debo autorizar la IP pública de esa conexión.
-
-Al conectarme a la misma base de datos tendré los mismos libros. La tabla LIBROS ya está creada y no necesito volver a ejecutar el script SQL. En Semana 3 se usa `spring.jpa.hibernate.ddl-auto=validate`: comprueba la estructura existente sin recrearla.
-
-## Iniciar servidor
+Se necesita un JDK compatible con Java 21. Desde esta carpeta:
 
 ```powershell
-cd "C:\Users\Elwer\Documents\Duoc\FullStack lll\Semana 3\Libros"
-$env:JAVA_HOME = "C:\Program Files\Java\jdk-27.0.1.0.3"
-.\mvnw.cmd spring-boot:run
+.\mvnw.cmd verify
+.\mvnw.cmd -B -ntp -f arquetipo-libros/pom.xml install
 ```
 
-Las rutas anteriores corresponden a mi equipo; en otro computador debo cambiarlas. La primera ejecución puede tardar mientras Maven descarga las dependencias.
+Los comandos completos para generar el proyecto estan en la [guia de Semana 4](README_SEMANA4.md) y en el [README del arquetipo](arquetipo-libros/README.md).
 
-Espero a que aparezca el mensaje `Started LibrosApplication`. La API queda disponible en `http://localhost:8080` y debo mantener la terminal abierta mientras realizo las pruebas.
+Para iniciar en local se necesita la carpeta `Wallet_Biblioteca` junto al pom.xml y `config/application-local.properties` con los accesos de Oracle. Usar el archivo de ejemplo como modelo. Despues ejecutar `.\mvnw.cmd spring-boot:run` y consultar `http://localhost:8080/libros`.
 
-La aplicación es una API REST y no tiene una página de inicio. Abrir solamente `http://localhost:8080/` devuelve 404; para consultar un libro debo usar `/libros/{id}` con un ID existente.
+La wallet, los accesos y las credenciales de AWS no se suben al repositorio. Las pruebas automaticas usan H2; el servicio desplegado usa Oracle. No repetir los scripts SQL en la base existente.
 
-## Probar el CRUD en Postman
+## AWS y GitHub Actions
 
-Uso `http://localhost:8080` como dirección base.
+El workflow verifica el proyecto base, instala el arquetipo, genera otro proyecto y ejecuta sus pruebas. El despliegue utiliza el JAR de ese proyecto generado. AWS Academy requiere renovar los tres secretos temporales cuando caducan.
 
-| Método | Ruta | Resultado esperado |
-| --- | --- | --- |
-| GET | `/libros` | 200 OK y la lista completa |
-| POST | `/libros` | 201 Created y el libro con su ID generado |
-| GET | `/libros/{id}` | 200 OK y los datos del libro |
-| PUT | `/libros/{id}` | 200 OK y los datos actualizados |
-| DELETE | `/libros/{id}` | 204 No Content |
+La infraestructura utiliza EC2 t3.micro, un bucket privado cifrado y el perfil existente LabInstanceProfile. El puerto 8080 se restringe a la IP de demostracion. El despliegue es de laboratorio y consume creditos mientras los recursos esten activos.
 
-Para crear un libro selecciono **POST**, escribo `http://localhost:8080/libros` y en **Body → raw → JSON** ingreso:
-
-```json
-{
-  "titulo": "Papelucho",
-  "autor": "Marcela Paz",
-  "anioPublicacion": 1947,
-  "genero": "Infantil"
-}
-```
-
-Oracle genera el ID automáticamente. Para consultar, actualizar o eliminar el libro debo usar el ID recibido en la respuesta del POST, sin asumir que comienza en 1.
-
-Para actualizar uso PUT con el ID en la URL y envío los cuatro atributos del libro en el JSON. El ID se mantiene. PUT actualiza un libro existente; si el ID fue eliminado o no existe, responde 404. GET y DELETE también responden 404 cuando el libro no existe. Los datos incompletos o inválidos en POST y PUT responden 400.
-
-GET a `/libros` sin indicar un ID devuelve 405, porque no se implementó una consulta para listar todos los libros.
-
-Puedo comprobar los datos guardados directamente en Oracle con:
-
-```sql
-SELECT * FROM libros;
-```
-
-## Repositorio
-
-El código está disponible en [GitHub](https://github.com/elwerneira/Libreria). La wallet y el archivo `config/application-local.properties` se comparten por un canal privado y no se suben al repositorio.
+Consultar los resultados reales en la pestana Actions. La [guia detallada](README_SEMANA4.md) explica configuracion, Postman, credenciales temporales y correspondencia con la pauta.

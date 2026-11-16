@@ -1,0 +1,275 @@
+{
+  "info": {
+    "name": "Semana 4 - Libros AWS",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar en orden. Los DELETE solo usan el ID creado por esta coleccion; conservar los libros originales."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "idPrueba",
+      "value": ""
+    },
+    {
+      "key": "tituloPrueba",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Listar libros",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/libros",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Lista JSON\", () => pm.expect(pm.response.json()).to.be.an(\"array\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 Crear libro temporal",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/libros",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"titulo\": \"{{tituloPrueba}}\",\n  \"autor\": \"Prueba Semana 4\",\n  \"anioPublicacion\": 2026,\n  \"genero\": \"Demostracion\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set(\"tituloPrueba\", \"Prueba S4 \" + Date.now());",
+              "pm.collectionVariables.set(\"idPrueba\", \"\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+              "if (pm.response.code === 201) pm.collectionVariables.set(\"idPrueba\", pm.response.json().id);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 Consultar libro creado",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/libros/{{idPrueba}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"idPrueba\")) throw new Error(\"Ejecutar primero la creacion del registro temporal\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 Actualizar libro temporal",
+      "request": {
+        "method": "PUT",
+        "url": "{{baseUrl}}/libros/{{idPrueba}}",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"titulo\": \"{{tituloPrueba}}\",\n  \"autor\": \"Prueba Semana 4\",\n  \"anioPublicacion\": 2026,\n  \"genero\": \"Actualizado\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"idPrueba\")) throw new Error(\"Ejecutar primero la creacion del registro temporal\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 Verificar actualizacion",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/libros/{{idPrueba}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"idPrueba\")) throw new Error(\"Ejecutar primero la creacion del registro temporal\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+              "pm.test(\"Cambio persistido\", () => pm.expect(pm.response.json().genero).to.eql(\"Actualizado\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 Rechazar datos incompletos",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/libros",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"titulo\": \"\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\", () => pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 Eliminar solo libro temporal",
+      "request": {
+        "method": "DELETE",
+        "url": "{{baseUrl}}/libros/{{idPrueba}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"idPrueba\")) throw new Error(\"Ejecutar primero la creacion del registro temporal\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 204\", () => pm.response.to.have.status(204));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 Confirmar eliminacion",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/libros/{{idPrueba}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (!pm.collectionVariables.get(\"idPrueba\")) throw new Error(\"Ejecutar primero la creacion del registro temporal\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\", () => pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

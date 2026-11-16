@@ -13,6 +13,7 @@ import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.Builder;
 
 @Entity
 @Table(name = "libros")
@@ -44,4 +45,12 @@ public class Libro {
     @Size(max = 100)
     @Column(nullable = false, length = 100)
     private String genero;
+
+    @Builder
+    public Libro(String titulo, String autor, Integer anioPublicacion, String genero) {
+        this.titulo = titulo;
+        this.autor = autor;
+        this.anioPublicacion = anioPublicacion;
+        this.genero = genero;
+    }
 }

@@ -1,0 +1,69 @@
+name: Semana 4 - Arquetipo, pruebas y AWS
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: semana4-${{ github.ref }}
+  cancel-in-progress: false
+jobs:
+  verificar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+      - name: Probar el microservicio base
+        run: bash mvnw -B -ntp verify
+      - name: Instalar el arquetipo propio
+        run: bash mvnw -B -ntp -f arquetipo-libros/pom.xml install
+      - name: Generar un proyecto desde el arquetipo
+        run: >-
+          bash mvnw -B -ntp org.apache.maven.plugins:maven-archetype-plugin:3.4.1:generate
+          -DarchetypeGroupId=cl.duoc.fullstack -DarchetypeArtifactId=libros-arquetipo
+          -DarchetypeVersion=1.0.0 -DgroupId=cl.duoc.fullstack -DartifactId=libros-generado
+          -Dversion=1.0.0-SNAPSHOT -Dpackage=cl.duoc.biblioteca
+          -DoutputDirectory=target/generado -DinteractiveMode=false -DarchetypeCatalog=local
+      - name: Probar y empaquetar el proyecto generado
+        run: bash mvnw -B -ntp -f target/generado/libros-generado/pom.xml verify
+      - name: Guardar el microservicio generado
+        uses: actions/upload-artifact@v4
+        with:
+          name: libros-generado
+          path: target/generado/libros-generado/target/libros-generado-1.0.0-SNAPSHOT.jar
+          retention-days: 7
+  desplegar:
+    needs: verificar
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request' && vars.AWS_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    env:
+      AWS_DEFAULT_REGION: us-east-1
+      ARTIFACT_BUCKET: ${{ vars.ARTIFACT_BUCKET }}
+      EC2_INSTANCE_ID: ${{ vars.EC2_INSTANCE_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: libros-generado
+          path: paquete
+      - name: Usar las credenciales temporales de AWS Academy
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: us-east-1
+      - name: Publicar la version en el bucket privado
+        run: |
+          test -n "$ARTIFACT_BUCKET" && test -n "$EC2_INSTANCE_ID"
+          aws s3 cp paquete/libros-generado-1.0.0-SNAPSHOT.jar "s3://$ARTIFACT_BUCKET/releases/$GITHUB_SHA.jar" --sse AES256 --only-show-errors
+          aws s3 cp deploy/aplicar-version.sh "s3://$ARTIFACT_BUCKET/deploy/aplicar-version.sh" --sse AES256 --only-show-errors
+      - name: Actualizar EC2 mediante Systems Manager y comprobar Oracle
+        run: python3 deploy/enviar-ssm.py

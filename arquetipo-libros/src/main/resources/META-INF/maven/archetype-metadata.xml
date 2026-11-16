@@ -1,0 +1,28 @@
+<archetype-descriptor xmlns="http://maven.apache.org/plugins/maven-archetype-plugin/archetype-descriptor/1.2.0" name="libros-arquetipo">
+  <fileSets>
+    <fileSet filtered="true" packaged="true" encoding="UTF-8">
+      <directory>src/main/java</directory><includes><include>**/*.java</include></includes>
+    </fileSet>
+    <fileSet filtered="true" packaged="true" encoding="UTF-8">
+      <directory>src/test/java</directory><includes><include>**/*.java</include></includes>
+    </fileSet>
+    <fileSet filtered="false" encoding="UTF-8">
+      <directory>src/main/resources</directory><includes><include>**/*</include></includes>
+    </fileSet>
+    <fileSet filtered="false" encoding="UTF-8">
+      <directory>src/test/resources</directory><includes><include>**/*</include></includes>
+    </fileSet>
+    <fileSet filtered="false" encoding="UTF-8">
+      <directory>sql</directory><includes><include>**/*.sql</include></includes>
+    </fileSet>
+    <fileSet filtered="false" encoding="UTF-8">
+      <directory>config</directory><includes><include>application-local.example.properties</include></includes>
+    </fileSet>
+    <fileSet filtered="false" encoding="UTF-8">
+      <directory>.mvn</directory><includes><include>wrapper/maven-wrapper.properties</include></includes>
+    </fileSet>
+    <fileSet filtered="false" encoding="UTF-8">
+      <directory></directory><includes><include>mvnw</include><include>mvnw.cmd</include><include>.gitignore</include><include>.gitattributes</include></includes>
+    </fileSet>
+  </fileSets>
+</archetype-descriptor>

@@ -30,8 +30,13 @@ public class LibroService {
     }
 
     public Libro crear(Libro libro) {
-        libro.setId(null);
-        return repository.save(libro);
+        Libro nuevo = Libro.builder()
+                .titulo(libro.getTitulo())
+                .autor(libro.getAutor())
+                .anioPublicacion(libro.getAnioPublicacion())
+                .genero(libro.getGenero())
+                .build();
+        return repository.save(nuevo);
     }
 
     public Libro actualizar(Long id, Libro datos) {

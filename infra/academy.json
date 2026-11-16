@@ -1,0 +1,158 @@
+{
+  "AWSTemplateFormatVersion": "2010-09-09",
+  "Description": "Semana 4 - Libros en EC2 usando el perfil existente de AWS Academy y SSM",
+  "Parameters": {
+    "ArtifactBucket": {
+      "Type": "String"
+    },
+    "VpcId": {
+      "Type": "AWS::EC2::VPC::Id"
+    },
+    "SubnetId": {
+      "Type": "AWS::EC2::Subnet::Id"
+    },
+    "AllowedCidr": {
+      "Type": "String",
+      "Description": "IP publica autorizada, en formato IPv4/32"
+    },
+    "InstanceProfile": {
+      "Type": "String",
+      "Default": "LabInstanceProfile"
+    },
+    "AmiId": {
+      "Type": "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+      "Default": "/aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64"
+    }
+  },
+  "Resources": {
+    "SecurityGroup": {
+      "Type": "AWS::EC2::SecurityGroup",
+      "Properties": {
+        "GroupDescription": "Libros accesible solo desde la IP de demostracion; administracion por SSM",
+        "VpcId": {
+          "Ref": "VpcId"
+        },
+        "SecurityGroupIngress": [
+          {
+            "IpProtocol": "tcp",
+            "FromPort": 8080,
+            "ToPort": 8080,
+            "CidrIp": {
+              "Ref": "AllowedCidr"
+            }
+          }
+        ],
+        "SecurityGroupEgress": [
+          {
+            "IpProtocol": "-1",
+            "CidrIp": "0.0.0.0/0"
+          }
+        ],
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "fullstack3-libros-s4"
+          }
+        ]
+      }
+    },
+    "Instance": {
+      "Type": "AWS::EC2::Instance",
+      "Properties": {
+        "ImageId": {
+          "Ref": "AmiId"
+        },
+        "InstanceType": "t3.micro",
+        "IamInstanceProfile": {
+          "Ref": "InstanceProfile"
+        },
+        "NetworkInterfaces": [
+          {
+            "DeviceIndex": "0",
+            "AssociatePublicIpAddress": true,
+            "SubnetId": {
+              "Ref": "SubnetId"
+            },
+            "GroupSet": [
+              {
+                "Ref": "SecurityGroup"
+              }
+            ]
+          }
+        ],
+        "MetadataOptions": {
+          "HttpTokens": "required",
+          "HttpEndpoint": "enabled"
+        },
+        "BlockDeviceMappings": [
+          {
+            "DeviceName": "/dev/xvda",
+            "Ebs": {
+              "VolumeSize": 8,
+              "VolumeType": "gp3",
+              "Encrypted": true,
+              "DeleteOnTermination": true
+            }
+          }
+        ],
+        "UserData": {
+          "Fn::Base64": {
+            "Fn::Join": [
+              "",
+              [
+                "#!/bin/bash\nset -euo pipefail\nexec > >(tee -a /var/log/libros-bootstrap.log) 2>&1\ndnf install -y java-21-amazon-corretto-headless unzip python3\nif ! command -v aws >/dev/null; then\n  curl -fsS https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip -o /run/awscli.zip\n  unzip -q /run/awscli.zip -d /run\n  /run/aws/install --bin-dir /usr/local/bin --install-dir /usr/local/aws-cli\nfi\nsystemctl enable --now amazon-ssm-agent\nid libros >/dev/null 2>&1 || useradd --system --home-dir /opt/libros --shell /sbin/nologin libros\ninstall -d -o libros -g libros -m 750 /opt/libros/config /opt/libros/Wallet_Biblioteca /opt/libros/releases\naws s3 cp s3://",
+                {
+                  "Ref": "ArtifactBucket"
+                },
+                "/private/application-local.properties /opt/libros/config/application-local.properties --only-show-errors\naws s3 cp s3://",
+                {
+                  "Ref": "ArtifactBucket"
+                },
+                "/private/wallet.zip /run/libros-wallet.zip --only-show-errors\nunzip -jo /run/libros-wallet.zip -d /opt/libros/Wallet_Biblioteca\nchown -R libros:libros /opt/libros\nchmod 600 /opt/libros/config/application-local.properties /opt/libros/Wallet_Biblioteca/*\ncat > /etc/systemd/system/libros.service <<'SERVICE'\n[Unit]\nDescription=Microservicio Libros Semana 4\nAfter=network-online.target\nWants=network-online.target\n[Service]\nUser=libros\nGroup=libros\nWorkingDirectory=/opt/libros\nExecStart=/usr/bin/java -Xms128m -Xmx384m -jar /opt/libros/app.jar --server.address=0.0.0.0 --server.port=8080\nRestart=on-failure\nRestartSec=10\nNoNewPrivileges=true\nPrivateTmp=true\nProtectSystem=strict\nReadWritePaths=/opt/libros\nProtectHome=true\nUMask=0077\n[Install]\nWantedBy=multi-user.target\nSERVICE\nsystemctl daemon-reload\nsystemctl enable libros\necho 'Configuracion base de Libros completada.'\n"
+              ]
+            ]
+          }
+        },
+        "Tags": [
+          {
+            "Key": "Name",
+            "Value": "fullstack3-libros-s4"
+          },
+          {
+            "Key": "Asignatura",
+            "Value": "DSY2205"
+          }
+        ]
+      }
+    }
+  },
+  "Outputs": {
+    "InstanceId": {
+      "Value": {
+        "Ref": "Instance"
+      }
+    },
+    "ApiUrl": {
+      "Value": {
+        "Fn::Join": [
+          "",
+          [
+            "http://",
+            {
+              "Fn::GetAtt": [
+                "Instance",
+                "PublicIp"
+              ]
+            },
+            ":8080/libros"
+          ]
+        ]
+      }
+    },
+    "SecurityGroupId": {
+      "Value": {
+        "Ref": "SecurityGroup"
+      }
+    }
+  }
+}
